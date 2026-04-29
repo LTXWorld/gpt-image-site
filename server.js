@@ -11,6 +11,11 @@ await loadEnvFile(path.join(__dirname, ".env"));
 const PORT = Number(process.env.PORT || 3000);
 const DEFAULT_IMAGE_URL = "https://api.openai.com/v1/images/generations";
 const MAX_BODY_BYTES = 96 * 1024;
+const IMAGE_REQUEST_TIMEOUT_MS = parsePositiveInteger(
+  process.env.IMAGE_REQUEST_TIMEOUT_MS,
+  4 * 60 * 1000
+);
+const RESPONSE_HEARTBEAT_MS = parsePositiveInteger(process.env.RESPONSE_HEARTBEAT_MS, 15 * 1000);
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -104,39 +109,67 @@ async function handleGenerate(req, res) {
     background
   };
 
-  const upstreamResponse = await fetch(upstreamUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
+  const stream = createJsonStream(res);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), IMAGE_REQUEST_TIMEOUT_MS);
+
+  res.on("close", () => {
+    if (!res.writableEnded) {
+      controller.abort();
+    }
   });
 
-  const responseText = await upstreamResponse.text();
-  const responseData = parseJson(responseText);
-
-  if (!upstreamResponse.ok) {
-    sendJson(res, upstreamResponse.status, {
-      error: extractUpstreamError(responseData, responseText)
+  try {
+    const upstreamResponse = await fetch(upstreamUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
-    return;
-  }
 
-  const image = normalizeImageResult(responseData, format);
+    const responseText = await upstreamResponse.text();
+    const responseData = parseJson(responseText);
 
-  if (!image) {
-    sendJson(res, 502, {
-      error: "图片生成接口没有返回可识别的图片数据。请检查上游接口返回格式。"
+    if (!upstreamResponse.ok) {
+      stream.send({
+        ok: false,
+        upstreamStatus: upstreamResponse.status,
+        error: extractUpstreamError(responseData, responseText)
+      });
+      return;
+    }
+
+    const image = normalizeImageResult(responseData, format);
+
+    if (!image) {
+      stream.send({
+        ok: false,
+        error: "图片生成接口没有返回可识别的图片数据。请检查上游接口返回格式。"
+      });
+      return;
+    }
+
+    stream.send({
+      ok: true,
+      image,
+      revisedPrompt: responseData?.data?.[0]?.revised_prompt || responseData?.revised_prompt || "",
+      model: payload.model
     });
-    return;
+  } catch (error) {
+    stream.send({
+      ok: false,
+      error:
+        error?.name === "AbortError"
+          ? `图片生成超过 ${Math.round(IMAGE_REQUEST_TIMEOUT_MS / 1000)} 秒仍未完成，请稍后重试或调低质量。`
+          : "图片生成接口暂时无法连接，请稍后再试。"
+    });
+  } finally {
+    clearTimeout(timeout);
+    stream.close();
   }
-
-  sendJson(res, 200, {
-    image,
-    revisedPrompt: responseData?.data?.[0]?.revised_prompt || responseData?.revised_prompt || "",
-    model: payload.model
-  });
 }
 
 async function serveStatic(requestPath, res) {
@@ -239,6 +272,36 @@ function parseJson(value) {
   }
 }
 
+function createJsonStream(res) {
+  let ended = false;
+  const heartbeat = setInterval(() => {
+    if (!ended && !res.destroyed) {
+      res.write("\n ");
+    }
+  }, RESPONSE_HEARTBEAT_MS);
+
+  res.writeHead(200, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Accel-Buffering": "no"
+  });
+  res.write(" ");
+
+  return {
+    send(payload) {
+      if (ended || res.destroyed) {
+        return;
+      }
+      ended = true;
+      clearInterval(heartbeat);
+      res.end(JSON.stringify(payload));
+    },
+    close() {
+      clearInterval(heartbeat);
+    }
+  };
+}
+
 function sendJson(res, status, payload) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(payload));
@@ -277,4 +340,9 @@ async function loadEnvFile(filePath) {
   } catch {
     // .env is optional in production because hosts usually inject env vars directly.
   }
+}
+
+function parsePositiveInteger(value, fallback) {
+  const next = Number.parseInt(value, 10);
+  return Number.isFinite(next) && next > 0 ? next : fallback;
 }

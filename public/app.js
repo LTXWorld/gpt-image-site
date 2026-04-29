@@ -29,9 +29,9 @@ form.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    const data = await readResponseData(response);
 
-    if (!response.ok) {
+    if (!response.ok || data.ok === false || data.error) {
       throw new Error(data.error || "图片生成失败。");
     }
 
@@ -132,4 +132,24 @@ function clearMessage() {
   errorMessage.classList.add("is-hidden");
   revisedPrompt.textContent = "";
   revisedPrompt.classList.add("is-hidden");
+}
+
+async function readResponseData(response) {
+  const text = await response.text();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    if (response.status === 504) {
+      return {
+        ok: false,
+        error: "图片生成超过网关等待时间。请稍后重试，或让服务器提高 nginx 的 proxy_read_timeout。"
+      };
+    }
+
+    return {
+      ok: false,
+      error: text.trim() || `请求失败，HTTP 状态码：${response.status}`
+    };
+  }
 }
