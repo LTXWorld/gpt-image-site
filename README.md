@@ -73,7 +73,7 @@ pm2 start ./bin/gpt-image-site --name gpt-image-site
 - `OPENAI_IMAGE_URL`：完整图片生成接口 URL，优先级最高
 - `OPENAI_BASE_URL`：当没有设置 `OPENAI_IMAGE_URL` 时使用，服务端会拼接 `/images/generations`
 - `OPENAI_IMAGE_MODEL`：模型名，默认代码使用 `gpt-image-2`
-- `IMAGE_REQUEST_TIMEOUT_MS`：服务端等待图片接口的最长时间，默认 `240000`（4 分钟）
+- `IMAGE_REQUEST_TIMEOUT_MS`：服务端等待图片接口的最长时间，默认 `600000`（10 分钟）
 - `RESPONSE_HEARTBEAT_MS`：生成过程中写给浏览器/反向代理的心跳间隔，默认 `15000`
 - `MAX_IMAGE_CONCURRENCY`：同时调用上游生图接口的数量，默认 `6`
 - `MAX_IMAGE_QUEUE`：等待执行的最大排队数量，默认 `120`
@@ -126,8 +126,8 @@ location / {
   proxy_set_header X-Real-IP $remote_addr;
   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
   proxy_set_header X-Forwarded-Proto $scheme;
-  proxy_read_timeout 300s;
-  proxy_send_timeout 300s;
+  proxy_read_timeout 600s;
+  proxy_send_timeout 600s;
   proxy_buffering off;
 }
 ```

@@ -27,7 +27,7 @@ import (
 const (
 	defaultImageURL         = "https://api.openai.com/v1/images/generations"
 	maxRequestBodyBytes     = 96 * 1024
-	defaultImageTimeout     = 4 * time.Minute
+	defaultImageTimeout     = 10 * time.Minute
 	defaultHeartbeat        = 15 * time.Second
 	defaultQueueTimeout     = 3 * time.Minute
 	defaultResponseMaxBytes = 64 * 1024 * 1024

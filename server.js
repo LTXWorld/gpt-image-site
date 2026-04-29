@@ -13,7 +13,7 @@ const DEFAULT_IMAGE_URL = "https://api.openai.com/v1/images/generations";
 const MAX_BODY_BYTES = 96 * 1024;
 const IMAGE_REQUEST_TIMEOUT_MS = parsePositiveInteger(
   process.env.IMAGE_REQUEST_TIMEOUT_MS,
-  4 * 60 * 1000
+  10 * 60 * 1000
 );
 const RESPONSE_HEARTBEAT_MS = parsePositiveInteger(process.env.RESPONSE_HEARTBEAT_MS, 15 * 1000);
 
