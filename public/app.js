@@ -1,7 +1,19 @@
+const authPanel = document.querySelector("#authPanel");
+const authForm = document.querySelector("#authForm");
+const authMessage = document.querySelector("#authMessage");
+const usernameInput = document.querySelector("#username");
+const passwordInput = document.querySelector("#password");
+const loginButton = document.querySelector("#loginButton");
+const registerButton = document.querySelector("#registerButton");
+const workspace = document.querySelector("#workspace");
 const form = document.querySelector("#generateForm");
 const promptInput = document.querySelector("#prompt");
 const submitButton = document.querySelector("#submitButton");
 const statusPill = document.querySelector("#statusPill");
+const userLabel = document.querySelector("#userLabel");
+const quotaLabel = document.querySelector("#quotaLabel");
+const quotaResetText = document.querySelector("#quotaResetText");
+const logoutButton = document.querySelector("#logoutButton");
 const emptyState = document.querySelector("#emptyState");
 const loadingState = document.querySelector("#loadingState");
 const resultImage = document.querySelector("#resultImage");
@@ -12,6 +24,29 @@ const formatSelect = document.querySelector("#format");
 const backgroundSelect = document.querySelector("#background");
 
 let lastObjectUrl = "";
+let currentUser = null;
+let currentQuota = null;
+
+initAuth();
+
+authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await submitAuth("/api/login");
+});
+
+registerButton.addEventListener("click", async () => {
+  await submitAuth("/api/register");
+});
+
+logoutButton.addEventListener("click", async () => {
+  try {
+    await fetch("/api/logout", { method: "POST" });
+  } finally {
+    currentUser = null;
+    currentQuota = null;
+    showAuth();
+  }
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -32,9 +67,20 @@ form.addEventListener("submit", async (event) => {
     const data = await readResponseData(response);
 
     if (!response.ok || data.ok === false || data.error) {
+      if (response.status === 401) {
+        currentUser = null;
+        currentQuota = null;
+        showAuth();
+      }
+      if (data.quota) {
+        updateQuota(data.quota);
+      }
       throw new Error(data.error || "图片生成失败。");
     }
 
+    if (data.quota) {
+      updateQuota(data.quota);
+    }
     showImage(data.image, payload.format);
     showRevisedPrompt(data.revisedPrompt);
     statusPill.textContent = "已生成";
@@ -45,6 +91,108 @@ form.addEventListener("submit", async (event) => {
     setLoading(false);
   }
 });
+
+async function initAuth() {
+  try {
+    const response = await fetch("/api/me");
+    const data = await readResponseData(response);
+
+    if (!response.ok || data.authenticated === false) {
+      showAuth();
+      return;
+    }
+
+    setAuthenticated(data.user, data.quota);
+  } catch {
+    showAuth();
+  }
+}
+
+async function submitAuth(endpoint) {
+  const payload = Object.fromEntries(new FormData(authForm).entries());
+  setAuthLoading(true);
+  clearAuthMessage();
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await readResponseData(response);
+
+    if (!response.ok || data.ok === false || data.error) {
+      throw new Error(data.error || "登录失败。");
+    }
+
+    passwordInput.value = "";
+    setAuthenticated(data.user, data.quota);
+  } catch (error) {
+    showAuthError(error.message || "登录失败，请稍后再试。");
+  } finally {
+    setAuthLoading(false);
+  }
+}
+
+function setAuthenticated(user, quota) {
+  currentUser = user;
+  currentQuota = quota;
+  authPanel.classList.add("is-hidden");
+  workspace.classList.remove("is-hidden");
+  userLabel.textContent = user?.username ? `账号：${user.username}` : "已登录";
+  updateQuota(quota);
+  promptInput.focus();
+}
+
+function showAuth() {
+  workspace.classList.add("is-hidden");
+  authPanel.classList.remove("is-hidden");
+  submitButton.disabled = false;
+  statusPill.textContent = "待生成";
+  usernameInput.focus();
+}
+
+function setAuthLoading(isLoading) {
+  loginButton.disabled = isLoading;
+  registerButton.disabled = isLoading;
+  loginButton.textContent = isLoading ? "处理中..." : "登录";
+}
+
+function showAuthError(message) {
+  authMessage.textContent = message;
+  authMessage.classList.remove("is-hidden");
+}
+
+function clearAuthMessage() {
+  authMessage.textContent = "";
+  authMessage.classList.add("is-hidden");
+}
+
+function updateQuota(quota) {
+  currentQuota = quota;
+
+  if (!quota) {
+    quotaLabel.textContent = "";
+    quotaResetText.textContent = "";
+    return;
+  }
+
+  quotaLabel.textContent = `剩余 ${quota.remaining} / ${quota.limit}`;
+
+  if (quota.resetAt && quota.remaining < quota.limit) {
+    const resetAt = new Date(quota.resetAt);
+    quotaResetText.textContent = Number.isNaN(resetAt.getTime())
+      ? ""
+      : `最早一次额度将在 ${resetAt.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        })} 恢复。`;
+  } else {
+    quotaResetText.textContent = "";
+  }
+}
 
 backgroundSelect.addEventListener("change", () => {
   if (backgroundSelect.value === "transparent" && formatSelect.value === "jpeg") {

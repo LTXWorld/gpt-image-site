@@ -8,14 +8,63 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="workspace" aria-label="AI 图片生成工作台">
+      <section class="auth-panel" id="authPanel" aria-label="账号登录">
+        <div class="auth-header">
+          <p class="eyebrow">GPT Image Studio</p>
+          <h1>登录</h1>
+        </div>
+
+        <form class="auth-form" id="authForm">
+          <label class="field">
+            <span>用户名</span>
+            <input
+              id="username"
+              name="username"
+              autocomplete="username"
+              maxlength="32"
+              placeholder="例如：tao_image"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span>密码</span>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              minlength="8"
+              maxlength="128"
+              required
+            />
+          </label>
+
+          <div class="auth-actions">
+            <button class="primary-button" id="loginButton" type="submit">登录</button>
+            <button class="secondary-button" id="registerButton" type="button">注册</button>
+          </div>
+        </form>
+
+        <p class="error-message is-hidden" id="authMessage"></p>
+      </section>
+
+      <section class="workspace is-hidden" id="workspace" aria-label="AI 图片生成工作台">
         <form class="control-panel" id="generateForm">
           <div class="brand-row">
             <div>
               <p class="eyebrow">GPT Image Studio</p>
               <h1>AI 图片生成</h1>
             </div>
-            <span class="status-pill" id="statusPill">待生成</span>
+            <div class="account-box">
+              <span class="status-pill" id="statusPill">待生成</span>
+              <button class="icon-button" id="logoutButton" type="button" title="退出登录" aria-label="退出登录">↪</button>
+            </div>
+          </div>
+
+          <div class="quota-row">
+            <span id="userLabel">已登录</span>
+            <strong id="quotaLabel">剩余 6 / 6</strong>
           </div>
 
           <label class="field">
@@ -75,7 +124,7 @@
             生成图片
           </button>
 
-          <p class="helper-text">密钥只在服务器端读取，不会发送到浏览器。</p>
+          <p class="helper-text" id="quotaResetText"></p>
         </form>
 
         <section class="preview-panel" aria-label="生成结果">

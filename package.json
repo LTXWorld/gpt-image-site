@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
-  },
-  "engines": {
-    "node": ">=20"
+    "start": "go run .",
+    "build": "go build -o bin/gpt-image-site .",
+    "dev": "go run .",
+    "start:node": "node server.js",
+    "dev:node": "node --watch server.js"
   }
 }

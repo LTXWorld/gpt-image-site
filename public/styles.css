@@ -30,6 +30,7 @@ body {
 }
 
 button,
+input,
 textarea,
 select {
   font: inherit;
@@ -51,12 +52,33 @@ select {
   gap: 20px;
 }
 
+.auth-panel,
 .control-panel,
 .preview-panel {
   background: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(216, 222, 230, 0.9);
   border-radius: 8px;
   box-shadow: var(--shadow);
+}
+
+.auth-panel {
+  width: min(420px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.auth-header {
+  margin-bottom: 22px;
+}
+
+.auth-form {
+  display: grid;
+}
+
+.auth-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
 }
 
 .control-panel {
@@ -113,6 +135,30 @@ h2 {
   font-weight: 700;
 }
 
+.account-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quota-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -6px 0 18px;
+  padding: 10px 12px;
+  border: 1px solid rgba(14, 124, 123, 0.18);
+  border-radius: 8px;
+  background: rgba(14, 124, 123, 0.06);
+  color: var(--accent-strong);
+  font-size: 13px;
+}
+
+.quota-row strong {
+  white-space: nowrap;
+}
+
 .field {
   display: grid;
   gap: 8px;
@@ -126,6 +172,7 @@ h2 {
 }
 
 textarea,
+input,
 select {
   width: 100%;
   border: 1px solid var(--line);
@@ -151,7 +198,13 @@ select {
   padding: 0 12px;
 }
 
+input {
+  height: 46px;
+  padding: 0 12px;
+}
+
 textarea:focus,
+input:focus,
 select:focus {
   border-color: var(--accent);
   background: #ffffff;
@@ -165,6 +218,8 @@ select:focus {
 }
 
 .primary-button,
+.secondary-button,
+.icon-button,
 .download-button {
   border: 0;
   border-radius: 8px;
@@ -190,14 +245,36 @@ select:focus {
 }
 
 .primary-button:hover,
+.secondary-button:hover,
+.icon-button:hover,
 .download-button:hover {
   transform: translateY(-1px);
 }
 
-.primary-button:disabled {
+.primary-button:disabled,
+.secondary-button:disabled {
   cursor: wait;
   opacity: 0.68;
   transform: none;
+}
+
+.secondary-button,
+.icon-button {
+  min-height: 44px;
+  background: #eef3f4;
+  color: #24313f;
+}
+
+.secondary-button {
+  padding: 0 18px;
+  font-weight: 800;
+}
+
+.icon-button {
+  width: 38px;
+  border: 1px solid rgba(36, 49, 63, 0.12);
+  cursor: pointer;
+  font-size: 18px;
 }
 
 .button-icon {
