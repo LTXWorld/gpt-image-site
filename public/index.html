@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI 图片生成</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace" aria-label="AI 图片生成工作台">
+        <form class="control-panel" id="generateForm">
+          <div class="brand-row">
+            <div>
+              <p class="eyebrow">GPT Image Studio</p>
+              <h1>AI 图片生成</h1>
+            </div>
+            <span class="status-pill" id="statusPill">待生成</span>
+          </div>
+
+          <label class="field">
+            <span>图片描述提示词</span>
+            <textarea
+              id="prompt"
+              name="prompt"
+              rows="9"
+              maxlength="32000"
+              placeholder="例如：一张高级产品摄影风格的香水海报，透明玻璃瓶，雨后柏油路反光，柔和冷色调，浅景深。"
+              required
+            ></textarea>
+          </label>
+
+          <div class="option-grid">
+            <label class="field">
+              <span>尺寸</span>
+              <select id="size" name="size">
+                <option value="1024x1024">方图 1024 x 1024</option>
+                <option value="1536x1024">横图 1536 x 1024</option>
+                <option value="1024x1536">竖图 1024 x 1536</option>
+                <option value="auto">自动</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>质量</span>
+              <select id="quality" name="quality">
+                <option value="auto">自动</option>
+                <option value="low">快速</option>
+                <option value="medium">标准</option>
+                <option value="high">高质量</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>格式</span>
+              <select id="format" name="format">
+                <option value="png">PNG</option>
+                <option value="webp">WebP</option>
+                <option value="jpeg">JPEG</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>背景</span>
+              <select id="background" name="background">
+                <option value="auto">自动</option>
+                <option value="opaque">不透明</option>
+                <option value="transparent">透明</option>
+              </select>
+            </label>
+          </div>
+
+          <button class="primary-button" id="submitButton" type="submit">
+            <span class="button-icon" aria-hidden="true">✦</span>
+            生成图片
+          </button>
+
+          <p class="helper-text">密钥只在服务器端读取，不会发送到浏览器。</p>
+        </form>
+
+        <section class="preview-panel" aria-label="生成结果">
+          <div class="preview-toolbar">
+            <div>
+              <p class="eyebrow">Preview</p>
+              <h2>生成结果</h2>
+            </div>
+            <a class="download-button is-hidden" id="downloadButton" href="#" download="ai-image.png">下载</a>
+          </div>
+
+          <div class="image-stage" id="imageStage">
+            <div class="empty-state" id="emptyState">
+              <div class="empty-mark" aria-hidden="true"></div>
+              <p>输入提示词后，生成结果会显示在这里。</p>
+            </div>
+            <div class="loading-state is-hidden" id="loadingState">
+              <div class="spinner" aria-hidden="true"></div>
+              <p>正在生成图片...</p>
+            </div>
+            <img class="result-image is-hidden" id="resultImage" alt="AI 生成图片" />
+          </div>
+
+          <p class="error-message is-hidden" id="errorMessage"></p>
+          <p class="revised-prompt is-hidden" id="revisedPrompt"></p>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
