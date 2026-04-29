@@ -140,10 +140,10 @@ async function readResponseData(response) {
   try {
     return JSON.parse(text);
   } catch {
-    if (response.status === 504) {
+    if (response.status === 504 || looksLikeHtml(text)) {
       return {
         ok: false,
-        error: "图片生成超过网关等待时间。请稍后重试，或让服务器提高 nginx 的 proxy_read_timeout。"
+        error: "图片生成超过网关等待时间，服务器返回了 HTML 错误页。请稍后重试，或提高 nginx / 上游接口的超时时间。"
       };
     }
 
@@ -152,4 +152,8 @@ async function readResponseData(response) {
       error: text.trim() || `请求失败，HTTP 状态码：${response.status}`
     };
   }
+}
+
+function looksLikeHtml(value) {
+  return /^\s*<(?:!doctype\s+html|html|head|body|h\d|title)\b/i.test(value || "");
 }

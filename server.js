@@ -137,7 +137,16 @@ async function handleGenerate(req, res) {
       stream.send({
         ok: false,
         upstreamStatus: upstreamResponse.status,
-        error: extractUpstreamError(responseData, responseText)
+        error: extractUpstreamError(responseData, responseText, upstreamResponse.status)
+      });
+      return;
+    }
+
+    if (!responseData) {
+      stream.send({
+        ok: false,
+        upstreamStatus: upstreamResponse.status,
+        error: buildNonJsonUpstreamError(responseText, upstreamResponse.status)
       });
       return;
     }
@@ -255,13 +264,39 @@ function normalizeImageResult(data, requestedFormat) {
   return "";
 }
 
-function extractUpstreamError(data, fallbackText) {
+function extractUpstreamError(data, fallbackText, status) {
   const message =
     data?.error?.message ||
     data?.message ||
-    (typeof fallbackText === "string" && fallbackText.trim());
+    extractReadableText(fallbackText);
 
-  return message || "图片生成接口调用失败。";
+  return message || buildNonJsonUpstreamError(fallbackText, status);
+}
+
+function buildNonJsonUpstreamError(text, status) {
+  if (status === 504 || looksLikeHtml(text)) {
+    return "图片生成接口返回了网关超时页面，而不是 JSON。请稍后重试，或提高上游/反向代理的超时时间。";
+  }
+
+  return "图片生成接口没有返回有效 JSON。请检查上游接口地址、模型名和服务状态。";
+}
+
+function extractReadableText(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const text = value.trim();
+
+  if (!text || looksLikeHtml(text)) {
+    return "";
+  }
+
+  return text;
+}
+
+function looksLikeHtml(value) {
+  return typeof value === "string" && /^\s*<(?:!doctype\s+html|html|head|body|h\d|title)\b/i.test(value);
 }
 
 function parseJson(value) {
